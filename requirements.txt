@@ -1,0 +1,8 @@
+# The web server uses only the Python standard library.
+# These are needed to run the translation model.
+# For a smaller download on a laptop without a GPU, install torch first with:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch
+transformers
+peft
+sentencepiece

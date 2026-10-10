@@ -1,0 +1,5 @@
+bhasha_setu.db
+*.db
+__pycache__/
+.venv/
+venv/

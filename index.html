@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bhasha Setu: Hindi to Santali review</title>
+<style>
+  :root {
+    --chalk: #f0f3ec;
+    --paper: #fbfcfa;
+    --ink: #1b2a29;
+    --muted: #566660;
+    --rule: #cfd7cc;
+    --sal: #2d6a4b;
+    --sal-deep: #1d4a34;
+    --brick: #a2382e;
+    --indic: "Nirmala UI", "Noto Sans Devanagari", "Noto Sans Ol Chiki", "Mangal", system-ui, sans-serif;
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--chalk); color: var(--ink); }
+  body { margin: 0; font: 1rem/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+  [hidden] { display: none !important; }
+
+  header { background: var(--paper); border-bottom: 1px solid var(--rule); }
+  .wrap { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem; }
+  .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem 1rem; padding-top: 1.1rem; }
+  h1 { font: 600 1.7rem/1.2 var(--serif); margin: 0; }
+  h1 span { font-family: var(--indic); font-weight: 400; color: var(--sal); margin-left: .6rem; font-size: 1.2rem; }
+  .tagline { color: var(--muted); margin: 0; }
+  #model-tag { margin-left: auto; font-size: .9rem; color: var(--muted); }
+
+  nav { display: flex; flex-wrap: wrap; gap: 0 .25rem; margin-top: .7rem; }
+  nav button { font: inherit; background: none; border: 0; border-bottom: 3px solid transparent;
+               padding: .6rem .9rem; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  nav button[aria-selected="true"] { color: var(--sal-deep); border-bottom-color: var(--sal); font-weight: 600; }
+
+  main.wrap { padding-top: 1.75rem; padding-bottom: 4rem; }
+  h2 { font: 600 1.2rem/1.3 var(--serif); margin: 2rem 0 .8rem; }
+  .lead { margin: 0 0 1rem; max-width: 46rem; }
+  .note { color: var(--muted); font-size: .92rem; }
+  .err { color: var(--brick); }
+
+  textarea, input[type="search"] { font: inherit; color: var(--ink); background: #fff;
+      border: 1px solid var(--rule); border-radius: 3px; padding: .5rem .65rem; width: 100%; }
+  textarea.in { font-family: var(--indic); font-size: 1.15rem; line-height: 1.6; min-height: 6.5rem; resize: vertical; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible {
+      outline: 3px solid #8fc2a6; outline-offset: 2px; }
+
+  .btn { font: inherit; padding: .55rem 1.1rem; border-radius: 3px; border: 1px solid var(--sal-deep);
+         background: var(--sal); color: #fff; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn:hover { background: var(--sal-deep); }
+  .btn.quiet { background: transparent; color: var(--sal-deep); }
+  .btn.quiet:hover { background: #e2ebe4; }
+  .btn[disabled] { opacity: .6; cursor: wait; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: .75rem; }
+
+  /* One review item: a colored ruler on the left shows how sure the model was. */
+  .item { display: grid; grid-template-columns: .45rem 1fr; background: var(--paper);
+          border: 1px solid var(--rule); border-radius: 4px; margin: 0 0 1rem; overflow: hidden; }
+  .item .bar { background: var(--bar, var(--rule)); }
+  .item .body { padding: 1rem 1.15rem; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  @media (max-width: 42rem) { .cols { grid-template-columns: 1fr; } }
+  .label { display: flex; justify-content: space-between; gap: .5rem; margin: 0 0 .3rem;
+           font-size: .88rem; color: var(--muted); }
+  .hi { font: 1.3rem/1.7 var(--indic); margin: 0 0 .5rem; overflow-wrap: anywhere; }
+  textarea.sat { font-family: var(--indic); font-size: 1.3rem; line-height: 1.7; min-height: 6rem; resize: vertical; }
+
+  .lesson { padding: 1rem 0; border-bottom: 1px solid var(--rule); }
+  .lesson .sat { font: 1.7rem/1.7 var(--indic); margin: 0; overflow-wrap: anywhere; }
+  .lesson .hi { font-size: 1.1rem; color: var(--muted); margin: .2rem 0 .5rem; }
+
+  .ledger { margin: 0; max-width: 40rem; }
+  .ledger div { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem 0;
+                border-bottom: 1px solid var(--rule); }
+  .ledger dt { color: var(--muted); }
+  .ledger dd { margin: 0; font-weight: 600; text-align: right; }
+
+  .word { display: grid; grid-template-columns: 6rem 1fr 1fr; gap: 1rem; padding: .6rem 0;
+          border-bottom: 1px solid var(--rule); font-family: var(--indic); font-size: 1.2rem; }
+  .word span:first-child { font-family: system-ui, sans-serif; font-size: .95rem; color: var(--muted); }
+
+  .banner { background: #fbf1d8; border: 1px solid #e3cf98; border-radius: 3px; padding: .6rem .9rem; margin: 0 0 1rem; }
+  .empty { color: var(--muted); padding: 1.25rem 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>Bhasha Setu<span lang="hi">भाषा सेतु</span></h1>
+      <p class="tagline">Hindi to Santali lessons, checked by a teacher before students see them</p>
+      <span id="model-tag"></span>
+    </div>
+    <nav role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="review" aria-selected="true">Review</button>
+      <button role="tab" data-tab="student" aria-selected="false">Student view</button>
+      <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
+      <button role="tab" data-tab="words" aria-selected="false">Ho and Mundari words</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel" id="tab-review">
+    <p class="lead">Paste Hindi sentences, one per line. The model drafts a Santali translation for each one, and the sentences it is least sure about come first.</p>
+    <textarea id="src" class="in" lang="hi" aria-label="Hindi sentences, one per line" placeholder="बच्चे स्कूल जाते हैं"></textarea>
+    <div class="actions">
+      <button class="btn" id="add">Add to review queue</button>
+      <button class="btn quiet" id="sample">Fill in sample sentences</button>
+      <span id="status" class="note" role="status" aria-live="polite"></span>
+    </div>
+    <h2>Waiting for review <span id="qcount" class="note"></span></h2>
+    <div id="queue"></div>
+  </section>
+
+  <section class="panel" id="tab-student" hidden>
+    <div id="offline-note" class="banner" hidden>The server is not reachable. Showing the lessons saved on this device.</div>
+    <p class="lead">Approved lessons: Santali first, Hindi below. The audio button reads the Hindi sentence aloud, because browsers do not have a Santali voice.</p>
+    <div id="lessons"></div>
+  </section>
+
+  <section class="panel" id="tab-progress" hidden>
+    <p class="lead">What the teachers have done so far, and how the model has performed.</p>
+    <dl class="ledger" id="ledger"></dl>
+    <p id="insight" class="lead" style="margin-top:1.25rem"></p>
+    <p id="bench" class="lead"></p>
+    <div class="actions">
+      <a class="btn" id="export" href="/api/export" download>Download approved pairs</a>
+    </div>
+    <p class="note" style="margin-top:.75rem;max-width:46rem">The file lists every approved pair and marks the ones a teacher changed. Retraining on it is a manual step in this version: add the pairs to the training data and run the Kaggle notebook again.</p>
+  </section>
+
+  <section class="panel" id="tab-words" hidden>
+    <p class="lead">Ho and Mundari words from NCERT's Ho–Hindi and Mundari primers. Search by a Hindi word, or by the Ho or Mundari word.</p>
+    <input type="search" id="q" lang="hi" aria-label="Search a Hindi, Ho or Mundari word" placeholder="Try मुँह">
+    <p class="note" style="margin-top:.6rem">These words were read from the PDFs with OCR, so some spellings are wrong. Check a word before using it in class.</p>
+    <div id="words"></div>
+  </section>
+</main>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+
+// Build DOM nodes safely: text is always inserted as text, never as HTML.
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  kids.flat().forEach((c) => e.append(c));
+  return e;
+}
+
+async function api(path, opts) {
+  let r;
+  try { r = await fetch(path, opts); }
+  catch (e) { throw new Error('Cannot reach the server. Check that app.py is still running.'); }
+  if (!r.ok) {
+    let msg = 'The request failed (' + r.status + ').';
+    try { const j = await r.json(); if (j.detail) msg = j.detail; } catch (e) {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+const post = (path, body) => api(path, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+function setStatus(msg, isError) {
+  const s = $('#status');
+  s.textContent = msg;
+  s.className = isError ? 'note err' : 'note';
+}
+const pct = (v) => (v == null ? 'none yet' : Math.round(v * 100) + '%');
+
+// ---- tabs
+function show(name) {
+  document.querySelectorAll('[role="tab"]').forEach((b) =>
+    b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  document.querySelectorAll('.panel').forEach((p) => { p.hidden = p.id !== 'tab-' + name; });
+  if (name === 'review') loadQueue();
+  if (name === 'student') loadStudent();
+  if (name === 'progress') loadStats();
+  if (name === 'words') loadWords();
+}
+document.querySelectorAll('[role="tab"]').forEach((b) =>
+  b.addEventListener('click', () => show(b.dataset.tab)));
+
+// ---- review
+const SAMPLE = [
+  'बच्चे स्कूल जाते हैं',
+  'मेरा नाम राम है',
+  'यह मेरी किताब है',
+  'हमें रोज़ पानी पीना चाहिए',
+  'सूरज सुबह निकलता है',
+  'माँ खाना बनाती है',
+].join('\n');
+$('#sample').addEventListener('click', () => { $('#src').value = SAMPLE; });
+
+$('#add').addEventListener('click', async () => {
+  const lines = $('#src').value.split('\n').map((s) => s.trim()).filter(Boolean);
+  if (!lines.length) { setStatus('Paste at least one Hindi sentence first.', true); return; }
+  const btn = $('#add');
+  btn.disabled = true;
+  let done = 0;
+  for (const line of lines) {
+    setStatus('Translating ' + (done + 1) + ' of ' + lines.length + '. Each sentence takes a few seconds.');
+    try { await post('/api/translate', { text: line }); }
+    catch (e) { setStatus(e.message, true); btn.disabled = false; return; }
+    done++;
+    await loadQueue();
+  }
+  $('#src').value = '';
+  btn.disabled = false;
+  setStatus('Added ' + done + (done === 1 ? ' sentence' : ' sentences') + ' to the queue.');
+});
+
+function barColor(conf) {  // red for unsure, green for sure
+  const t = Math.max(0, Math.min(1, (conf - 0.2) / 0.6));
+  return 'hsl(' + Math.round(t * 125) + ' 55% 40%)';
+}
+
+function renderItem(it) {
+  const ta = h('textarea', { class: 'sat', lang: 'sat', 'aria-label': 'Santali translation, editable' });
+  ta.value = it.draft;
+  const edited = h('span', { class: 'note' });
+  ta.addEventListener('input', () => {
+    edited.textContent = ta.value.trim() !== it.draft.trim() ? 'You changed the draft.' : '';
+  });
+  const btn = h('button', { class: 'btn' }, 'Approve');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const r = await post('/api/approve/' + it.id, { final: ta.value });
+      setStatus(r.edited ? 'Approved with your changes.' : 'Approved as written.');
+      await loadQueue();
+    } catch (e) { setStatus(e.message, true); btn.disabled = false; }
+  });
+  const art = h('article', { class: 'item', style: '--bar:' + barColor(it.confidence) },
+    h('div', { class: 'bar' }),
+    h('div', { class: 'body' },
+      h('div', { class: 'cols' },
+        h('div', {},
+          h('p', { class: 'label' }, 'Hindi'),
+          h('p', { class: 'hi', lang: 'hi' }, it.hindi),
+          h('button', { class: 'btn quiet', onclick: () => speakHindi(it.hindi) }, 'Hear Hindi')),
+        h('div', {},
+          h('p', { class: 'label' }, h('span', {}, 'Santali draft'),
+            h('span', {}, 'Model confidence ' + pct(it.confidence))),
+          ta,
+          h('div', { class: 'actions' }, btn, edited)))));
+  return art;
+}
+
+async function loadQueue() {
+  const box = $('#queue');
+  try {
+    const items = await api('/api/queue');
+    $('#qcount').textContent = items.length ? '(' + items.length + ')' : '';
+    box.replaceChildren(...(items.length
+      ? items.map(renderItem)
+      : [h('p', { class: 'empty' }, 'Nothing to review. Paste Hindi sentences above and choose Add to review queue.')]));
+  } catch (e) { setStatus(e.message, true); }
+}
+
+// ---- audio (Hindi only: no browser has a Santali voice)
+function speakHindi(text) {
+  if (!('speechSynthesis' in window)) { setStatus('This browser cannot read text aloud.', true); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'hi-IN'; u.rate = 0.85;
+  speechSynthesis.speak(u);
+}
+
+// ---- student view, with a copy kept on the device for when the server is gone
+async function loadStudent() {
+  let data, offline = false;
+  try {
+    data = await api('/api/approved');
+    localStorage.setItem('bs_approved', JSON.stringify(data));
+  } catch (e) {
+    offline = true;
+    try { data = JSON.parse(localStorage.getItem('bs_approved') || '[]'); } catch (_) { data = []; }
+  }
+  $('#offline-note').hidden = !offline;
+  $('#lessons').replaceChildren(...(data.length
+    ? data.map((l) => h('div', { class: 'lesson' },
+        h('p', { class: 'sat', lang: 'sat' }, l.final),
+        h('p', { class: 'hi', lang: 'hi' }, l.hindi),
+        h('button', { class: 'btn quiet', onclick: () => speakHindi(l.hindi) }, 'Hear Hindi')))
+    : [h('p', { class: 'empty' }, 'No approved lessons yet. Approve a sentence in Review and it appears here.')]));
+}
+
+// ---- progress
+async function loadStats() {
+  try {
+    const s = await api('/api/stats');
+    const rows = [
+      ['Sentences translated', s.total],
+      ['Waiting for review', s.pending],
+      ['Approved', s.approved],
+      ['Changed by a teacher', s.edited + (s.approved ? ' of ' + s.approved : '')],
+      ['Average model confidence', pct(s.avg_conf)],
+      ['Model in use', s.model],
+    ];
+    $('#ledger').replaceChildren(...rows.map(([k, v]) => h('div', {}, h('dt', {}, k), h('dd', {}, String(v)))));
+    $('#insight').textContent = (s.conf_edited != null && s.conf_kept != null)
+      ? 'Average confidence was ' + pct(s.conf_edited) + ' on sentences teachers changed and ' + pct(s.conf_kept) +
+        ' on sentences they left alone. If the first number is lower, the confidence score is a good guide to what needs review first.'
+      : 'Once teachers have both changed and approved sentences as written, this page compares how sure the model was on each group.';
+    const b = s.benchmark;
+    $('#bench').textContent = 'Fine-tuning raised chrF from ' + b.base.toFixed(1) + ' to ' + b.tuned.toFixed(1) + ', measured as ' + b.note + '.';
+  } catch (e) { $('#ledger').replaceChildren(h('p', { class: 'err' }, e.message)); }
+}
+
+// ---- Ho and Mundari word lookup
+let wordTimer;
+$('#q').addEventListener('input', () => { clearTimeout(wordTimer); wordTimer = setTimeout(loadWords, 200); });
+async function loadWords() {
+  const box = $('#words');
+  try {
+    const r = await api('/api/lookup?q=' + encodeURIComponent($('#q').value));
+    if (!r.total_words) {
+      box.replaceChildren(h('p', { class: 'empty' },
+        'No word lists found. Put ho_hindi_pairs_raw.csv and mundari_pairs_raw.csv in a folder named vocab next to app.py, then restart the app.'));
+    } else if (!$('#q').value.trim()) {
+      box.replaceChildren(h('p', { class: 'empty' }, r.total_words + ' words loaded. Type a word to search.'));
+    } else if (!r.results.length) {
+      box.replaceChildren(h('p', { class: 'empty' }, 'No match. Try the first letters of the word.'));
+    } else {
+      box.replaceChildren(...r.results.map((w) => h('div', { class: 'word' },
+        h('span', {}, w.lang), h('span', { lang: 'hi' }, w.word), h('span', { lang: 'hi' }, w.hindi))));
+    }
+  } catch (e) { box.replaceChildren(h('p', { class: 'err' }, e.message)); }
+}
+
+// ---- start
+(async function init() {
+  if ('serviceWorker' in navigator) { try { await navigator.serviceWorker.register('/sw.js'); } catch (e) {} }
+  try {
+    const hl = await api('/api/health');
+    $('#model-tag').textContent = 'Model: ' + hl.model;
+    show('review');
+    loadStudent();  // keeps the offline copy of approved lessons fresh
+  } catch (e) {
+    show('student');
+  }
+})();
+</script>
+</body>
+</html>
