@@ -1,206 +1,34 @@
----
-base_model: facebook/nllb-200-distilled-600M
-library_name: peft
-tags:
-- base_model:adapter:facebook/nllb-200-distilled-600M
-- lora
-- transformers
----
+# Bhasha Setu Santali adapter
 
-# Model Card for Model ID
+## Summary
 
-<!-- Provide a quick summary of what the model is/does. -->
+This directory contains a PEFT LoRA adapter loaded by the Bhasha Setu FastAPI service for Hindi-to-Santali draft translation. It is a classroom prototype: translations need both a teacher-role review and a community language expert-role review before students can see them.
 
+## Verified configuration
 
+- Base model: `facebook/nllb-200-distilled-600M`.
+- Source language tag: `hin_Deva` (Hindi in Devanagari).
+- Target language tag in the app: `sat_Beng` (Santali in the Bengali-script setting).
+- LoRA rank: 8; alpha: 32; dropout: 0.05.
+- Target modules: `q_proj` and `v_proj`.
+- Inference is on the school server. The PWA caches approved text, not the NLLB model weights.
 
-## Model Details
+These fields come from `adapter_config.json` and the inference code in `app.py`. The local NLLB tokenizer recognizes `sat_Beng`; it does not recognize `sat_Olck`. This adapter therefore must not be presented as Ol Chiki output.
 
-### Model Description
+## Training and evaluation provenance
 
-<!-- Provide a longer summary of what this model is. -->
+The original parallel training corpus, preprocessing steps, and evaluation report are not included in this repository. The adapter's original scores cannot be reproduced or independently checked from the files here. Do not treat the confidence score produced by generation as a probability of correctness.
 
+The current training workflow in `training/train_santali_adapter.py` continues this adapter only from pairs carrying both reviewer roles, keeps the holdout corpus separate, reports chrF for the base model/current adapter/candidate, and writes a candidate directory without replacing this adapter. The original adapter's training data is still unknown, so holdout independence from its earlier training cannot be proved. A metric increase is not a substitute for community review.
 
+Back-translation output is synthetic and starts with `human_validated: false`. It must be checked by fluent reviewers before it can enter a training run. The app does not automatically train or install new weights.
 
-- **Developed by:** [More Information Needed]
-- **Funded by [optional]:** [More Information Needed]
-- **Shared by [optional]:** [More Information Needed]
-- **Model type:** [More Information Needed]
-- **Language(s) (NLP):** [More Information Needed]
-- **License:** [More Information Needed]
-- **Finetuned from model [optional]:** [More Information Needed]
+## Intended use and limitations
 
-### Model Sources [optional]
+- Use only for Hindi-to-Santali draft suggestions in the configured Bengali-script setting.
+- Ho and Mundari translation models are not included in this adapter.
+- The model can mistranslate educational terms, omit context, mix languages, or produce the wrong writing system.
+- It is not an offline student-device model, OCR system, explanation model, or speech model.
+- Do not publish a draft to students until both reviewer roles have approved it.
 
-<!-- Provide the basic links for the model. -->
-
-- **Repository:** [More Information Needed]
-- **Paper [optional]:** [More Information Needed]
-- **Demo [optional]:** [More Information Needed]
-
-## Uses
-
-<!-- Address questions around how the model is intended to be used, including the foreseeable users of the model and those affected by the model. -->
-
-### Direct Use
-
-<!-- This section is for the model use without fine-tuning or plugging into a larger ecosystem/app. -->
-
-[More Information Needed]
-
-### Downstream Use [optional]
-
-<!-- This section is for the model use when fine-tuned for a task, or when plugged into a larger ecosystem/app -->
-
-[More Information Needed]
-
-### Out-of-Scope Use
-
-<!-- This section addresses misuse, malicious use, and uses that the model will not work well for. -->
-
-[More Information Needed]
-
-## Bias, Risks, and Limitations
-
-<!-- This section is meant to convey both technical and sociotechnical limitations. -->
-
-[More Information Needed]
-
-### Recommendations
-
-<!-- This section is meant to convey recommendations with respect to the bias, risk, and technical limitations. -->
-
-Users (both direct and downstream) should be made aware of the risks, biases and limitations of the model. More information needed for further recommendations.
-
-## How to Get Started with the Model
-
-Use the code below to get started with the model.
-
-[More Information Needed]
-
-## Training Details
-
-### Training Data
-
-<!-- This should link to a Dataset Card, perhaps with a short stub of information on what the training data is all about as well as documentation related to data pre-processing or additional filtering. -->
-
-[More Information Needed]
-
-### Training Procedure
-
-<!-- This relates heavily to the Technical Specifications. Content here should link to that section when it is relevant to the training procedure. -->
-
-#### Preprocessing [optional]
-
-[More Information Needed]
-
-
-#### Training Hyperparameters
-
-- **Training regime:** [More Information Needed] <!--fp32, fp16 mixed precision, bf16 mixed precision, bf16 non-mixed precision, fp16 non-mixed precision, fp8 mixed precision -->
-
-#### Speeds, Sizes, Times [optional]
-
-<!-- This section provides information about throughput, start/end time, checkpoint size if relevant, etc. -->
-
-[More Information Needed]
-
-## Evaluation
-
-<!-- This section describes the evaluation protocols and provides the results. -->
-
-### Testing Data, Factors & Metrics
-
-#### Testing Data
-
-<!-- This should link to a Dataset Card if possible. -->
-
-[More Information Needed]
-
-#### Factors
-
-<!-- These are the things the evaluation is disaggregating by, e.g., subpopulations or domains. -->
-
-[More Information Needed]
-
-#### Metrics
-
-<!-- These are the evaluation metrics being used, ideally with a description of why. -->
-
-[More Information Needed]
-
-### Results
-
-[More Information Needed]
-
-#### Summary
-
-
-
-## Model Examination [optional]
-
-<!-- Relevant interpretability work for the model goes here -->
-
-[More Information Needed]
-
-## Environmental Impact
-
-<!-- Total emissions (in grams of CO2eq) and additional considerations, such as electricity usage, go here. Edit the suggested text below accordingly -->
-
-Carbon emissions can be estimated using the [Machine Learning Impact calculator](https://mlco2.github.io/impact#compute) presented in [Lacoste et al. (2019)](https://arxiv.org/abs/1910.09700).
-
-- **Hardware Type:** [More Information Needed]
-- **Hours used:** [More Information Needed]
-- **Cloud Provider:** [More Information Needed]
-- **Compute Region:** [More Information Needed]
-- **Carbon Emitted:** [More Information Needed]
-
-## Technical Specifications [optional]
-
-### Model Architecture and Objective
-
-[More Information Needed]
-
-### Compute Infrastructure
-
-[More Information Needed]
-
-#### Hardware
-
-[More Information Needed]
-
-#### Software
-
-[More Information Needed]
-
-## Citation [optional]
-
-<!-- If there is a paper or blog post introducing the model, the APA and Bibtex information for that should go in this section. -->
-
-**BibTeX:**
-
-[More Information Needed]
-
-**APA:**
-
-[More Information Needed]
-
-## Glossary [optional]
-
-<!-- If relevant, include terms and calculations in this section that can help readers understand the model or model card. -->
-
-[More Information Needed]
-
-## More Information [optional]
-
-[More Information Needed]
-
-## Model Card Authors [optional]
-
-[More Information Needed]
-
-## Model Card Contact
-
-[More Information Needed]
-### Framework versions
-
-- PEFT 0.20.0
+Before classroom deployment, collect permissioned and representative parallel data, document the community's preferred Santali writing system, create a genuinely held-out test set, and have fluent speakers assess both quality and educational meaning.

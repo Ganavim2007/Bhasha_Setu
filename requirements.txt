@@ -1,8 +1,15 @@
-# The web server uses only the Python standard library.
-# These are needed to run the translation model.
+# API server, PDF/Word/PowerPoint extraction, flowing PDF output, and model dependencies.
 # For a smaller download on a laptop without a GPU, install torch first with:
 #   pip install torch --index-url https://download.pytorch.org/whl/cpu
+fastapi
+uvicorn
+python-multipart
+pypdf
+pymupdf>=1.26,<2
+python-docx
+python-pptx
 torch
 transformers
 peft
 sentencepiece
+Pillow>=10

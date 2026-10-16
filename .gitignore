@@ -1,5 +1,9 @@
 bhasha_setu.db
 *.db
+audio_recordings/
+lesson_visuals/
+.pdf_staging/
+.student_pdf_cache/
 __pycache__/
 .venv/
 venv/

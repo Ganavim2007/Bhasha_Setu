@@ -1,0 +1,4 @@
+# Optional local rendering and OCR support for scanned PDF pages.
+# Install Tesseract itself and its Hindi (hin) language data separately.
+pypdfium2>=4.28,<6
+pytesseract>=0.3.10

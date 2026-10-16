@@ -1,0 +1,6 @@
+# Optional local Santali speech generation. Install after requirements.txt.
+# The model weights are downloaded separately on the first generation request.
+accelerate
+numpy
+soundfile
+git+https://github.com/huggingface/parler-tts.git
