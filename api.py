@@ -36,6 +36,8 @@ MAX_TRANSLATED_PDF_PAGES = 500
 MAX_AUDIO_BYTES = 5 * 1024 * 1024
 MAX_GENERATED_AUDIO_BYTES = 24 * 1024 * 1024
 MAX_VISUAL_BYTES = 5 * 1024 * 1024
+HF_VISUAL_MODEL = os.environ.get("BS_VISUAL_MODEL", "black-forest-labs/FLUX.1-schnell")
+HF_VISUAL_PROVIDER = os.environ.get("BS_VISUAL_PROVIDER", "nscale")
 SUPPORTED_LANGUAGE = "Santali"
 TEACHER_PIN = os.environ.get("BS_TEACHER_PIN", "")
 EXPERT_PIN = os.environ.get("BS_EXPERT_PIN", "")
@@ -80,7 +82,7 @@ def _translation_resource_guard(function):
             return function(*args, **kwargs)
     return guarded
 SERVICE_WORKER_JS = r"""
-const CACHE = 'bhasha-setu-v20';
+const CACHE = 'bhasha-setu-v22';
 const AUDIO_CACHE = 'bhasha-approved-audio-v1';
 const VISUAL_CACHE = 'bhasha-approved-visual-v1';
 const STUDENT_PDF_CACHE = 'bhasha-student-pdf-v1';
@@ -778,10 +780,10 @@ def remove_visual_file(filename):
 def get_visual_work(reviewer_role, limit=20):
     where = """status='approved' AND model!=? AND (
         visual_status='none' OR
-        (visual_status='awaiting_review' AND visual_author!=?) OR
+        visual_status='awaiting_review' OR
         (visual_status='rejected' AND visual_author=?)
     )"""
-    params = (DEMO_MODEL, reviewer_role, reviewer_role)
+    params = (DEMO_MODEL, reviewer_role)
     with db() as con:
         total = con.execute(f"SELECT COUNT(*) FROM items WHERE {where}", params).fetchone()[0]
         rows = con.execute(
@@ -863,7 +865,7 @@ def get_stats():
 
 
 def lookup_words(q):
-    # Raw OCR entries stay out of the learner search until both roles approve them.
+    # Raw OCR entries stay out of the learner search until a reviewer approves them.
     result = core.list_approved_glossary() if not str(q or "").strip() else core.search_glossary(q, "")
     return {"total_words": sum(result["counts"].values()), "results": result["results"],
             "complete": result.get("complete", False)}
@@ -945,7 +947,7 @@ def review_glossary_entry(entry_id, body, reviewer_role):
                 (entry_id, row["review_round"], reviewer_role),
             ).fetchone()
             if prior:
-                raise core.ApiError(409, "The other reviewer role must check this word pair next.")
+                raise core.ApiError(409, "This reviewer has already checked the word pair in this review round.")
             reviewed = time.time()
             if body.action == "reject":
                 con.execute(
@@ -960,16 +962,11 @@ def review_glossary_entry(entry_id, body, reviewer_role):
                 )
                 return {"id": entry_id, "status": "rejected", "message": "Entry rejected and kept out of learner search."}
 
-            other_match = con.execute(
-                """SELECT 1 FROM glossary_review_events WHERE glossary_id=? AND review_round=?
-                   AND reviewer_role!=? AND action='approve' AND hindi=? AND word=? LIMIT 1""",
-                (entry_id, row["review_round"], reviewer_role, hindi, word),
-            ).fetchone()
             changed = hindi != row["hindi"] or word != row["word"]
             restarted = row["status"] == "reviewing" and changed
             next_round = row["review_round"] + 1 if restarted else row["review_round"]
-            approved = row["status"] == "reviewing" and bool(other_match) and not restarted
-            status = "approved" if approved else "reviewing"
+            approved = True
+            status = "approved"
             con.execute(
                 """UPDATE glossary SET hindi=?,word=?,status=?,review_round=?,rejection_note=NULL
                    WHERE id=?""",
@@ -984,13 +981,7 @@ def review_glossary_entry(entry_id, body, reviewer_role):
     except sqlite3.IntegrityError as exc:
         raise core.ApiError(409, "That corrected pair duplicates an existing word. Choose the existing row instead.") from exc
 
-    if approved:
-        message = "Word pair approved for learner search."
-    elif restarted:
-        message = "Your correction changed the pair. The other reviewer role must check this corrected version again."
-    else:
-        waiting = "community language expert" if reviewer_role == "teacher" else "teacher"
-        message = f"Pair submitted. Waiting for the {waiting} to check the exact words."
+    message = "Word pair approved for learner search."
     return {"id": entry_id, "status": status, "approved": approved, "revision_restarted": restarted,
             "message": message}
 
@@ -1010,7 +1001,7 @@ def reopen_glossary_entry(entry_id, note, reviewer_role):
             (f"Correction requested by {reviewer_role}: {note[:450]}", entry_id),
         )
     return {"id": entry_id, "status": "pending",
-            "message": "The pair is hidden from learners until both roles review it again."}
+            "message": "The pair is hidden from learners until a reviewer approves it again."}
 
 
 def get_language_example_work(reviewer_role, lang=None, limit=20):
@@ -1047,15 +1038,12 @@ def get_language_corpus_state():
             if row["lang"] in counts and row["status"] in counts[row["lang"]]:
                 counts[row["lang"]][row["status"]] = row["n"]
         approved = con.execute(
-            """SELECT e.id,e.lang,e.hindi,e.target,e.writing_system,e.source_note,e.contributor_role,e.approved
+            """SELECT e.id,e.lang,e.hindi,e.target,e.writing_system,e.source_note,e.contributor_role,
+                      e.review_round,e.approved
                FROM language_examples e
                WHERE e.status='approved'
                  AND EXISTS (SELECT 1 FROM language_example_reviews r WHERE r.example_id=e.id
-                             AND r.review_round=e.review_round AND r.reviewer_role='teacher'
-                             AND r.action='approve' AND r.hindi=e.hindi AND r.target=e.target
-                             AND r.writing_system=e.writing_system AND r.source_note=e.source_note)
-                 AND EXISTS (SELECT 1 FROM language_example_reviews r WHERE r.example_id=e.id
-                             AND r.review_round=e.review_round AND r.reviewer_role='community_expert'
+                             AND r.review_round=e.review_round
                              AND r.action='approve' AND r.hindi=e.hindi AND r.target=e.target
                              AND r.writing_system=e.writing_system AND r.source_note=e.source_note)
                ORDER BY e.approved DESC,e.id DESC LIMIT 30"""
@@ -1074,11 +1062,7 @@ def get_language_student_lessons(lang):
                FROM language_examples e
                WHERE e.lang=? AND e.status='approved' AND TRIM(e.target)!=''
                  AND EXISTS (SELECT 1 FROM language_example_reviews r WHERE r.example_id=e.id
-                             AND r.review_round=e.review_round AND r.reviewer_role='teacher'
-                             AND r.action='approve' AND r.hindi=e.hindi AND r.target=e.target
-                             AND r.writing_system=e.writing_system AND r.source_note=e.source_note)
-                 AND EXISTS (SELECT 1 FROM language_example_reviews r WHERE r.example_id=e.id
-                             AND r.review_round=e.review_round AND r.reviewer_role='community_expert'
+                             AND r.review_round=e.review_round
                              AND r.action='approve' AND r.hindi=e.hindi AND r.target=e.target
                              AND r.writing_system=e.writing_system AND r.source_note=e.source_note)
                ORDER BY e.id DESC""", (lang,),
@@ -1157,7 +1141,7 @@ def queue_language_translation(lang, hindi, writing_system, source_note, reviewe
             (lang, hindi, writing_system, source_note, reviewer_role, time.time()),
         )
     return {"id": cur.lastrowid, "language": lang, "status": "pending",
-            "message": "Added to the human translation queue. A reviewer must write the translation, then both roles approve it before students can see it."}
+            "message": "Added to the human translation queue. A reviewer must write and approve the translation before students can see it."}
 
 
 def add_language_example(lang, hindi, target, writing_system, source_note, reviewer_role):
@@ -1187,7 +1171,7 @@ def add_language_example(lang, hindi, target, writing_system, source_note, revie
             (lang, hindi, target, writing_system, source_note, reviewer_role, time.time()),
         )
     return {"id": cur.lastrowid, "status": "pending",
-            "message": "Sentence pair submitted. The other reviewer role must approve the exact pair before it can be exported."}
+            "message": "Sentence pair submitted for one reviewer to check and approve."}
 
 
 def review_language_example(example_id, body, reviewer_role):
@@ -1220,7 +1204,7 @@ def review_language_example(example_id, body, reviewer_role):
                 (example_id, row["review_round"], reviewer_role),
             ).fetchone()
             if prior:
-                raise core.ApiError(409, "The other reviewer role must check this sentence pair next.")
+                raise core.ApiError(409, "This reviewer has already checked the sentence pair in this review round.")
             reviewed = time.time()
             if body.action == "reject":
                 con.execute(
@@ -1242,14 +1226,8 @@ def review_language_example(example_id, body, reviewer_role):
                        or source_note != row["source_note"])
             restarted = row["status"] == "reviewing" and changed
             next_round = row["review_round"] + 1 if restarted else row["review_round"]
-            other_match = con.execute(
-                """SELECT 1 FROM language_example_reviews WHERE example_id=? AND review_round=?
-                   AND reviewer_role!=? AND action='approve' AND hindi=? AND target=?
-                   AND writing_system=? AND source_note=? LIMIT 1""",
-                (example_id, row["review_round"], reviewer_role, hindi, target, writing_system, source_note),
-            ).fetchone()
-            approved = row["status"] == "reviewing" and bool(other_match) and not restarted
-            status = "approved" if approved else "reviewing"
+            approved = True
+            status = "approved"
             if (row["audio_filename"] and
                     (target != row["target"] or writing_system != row["writing_system"]) and
                     row["audio_transcript"] != target):
@@ -1276,13 +1254,7 @@ def review_language_example(example_id, body, reviewer_role):
 
     remove_audio_file(invalidated_audio)
 
-    if approved:
-        message = "Both reviewer roles approved this exact sentence pair for the Ho/Mundari research corpus."
-    elif restarted:
-        message = "Your edit changed the pair or source note. The other reviewer role must check this exact version again."
-    else:
-        waiting = "community language expert" if reviewer_role == "teacher" else "teacher"
-        message = f"Review saved. Waiting for the {waiting} to check the exact sentence and source."
+    message = "One reviewer approved this exact sentence pair for the Ho/Mundari collection."
     return {"id": example_id, "status": status, "approved": approved,
             "revision_restarted": restarted, "message": message}
 
@@ -1303,7 +1275,7 @@ def reopen_language_example(example_id, note, reviewer_role):
             (f"Correction requested by {reviewer_role}: {note[:450]}", example_id),
         )
     return {"id": example_id, "status": "pending",
-            "message": "The translation task is back in the queue; both roles must approve its exact text before students can see it."}
+            "message": "The translation task is back in the queue; one reviewer must approve its exact text before students can see it."}
 
 
 def export_language_examples(lang):
@@ -1312,28 +1284,36 @@ def export_language_examples(lang):
     with db() as con:
         rows = con.execute(
             """SELECT e.id,e.lang,e.hindi,e.target,e.writing_system,e.source_note,e.contributor_role,
-                      teacher.reviewed AS teacher_reviewed,expert.reviewed AS expert_reviewed
+                      e.review_round,
+                      (SELECT MAX(r.reviewed) FROM language_example_reviews r
+                       WHERE r.example_id=e.id AND r.review_round=e.review_round
+                         AND r.action='approve' AND r.hindi=e.hindi AND r.target=e.target
+                         AND r.writing_system=e.writing_system AND r.source_note=e.source_note) AS reviewed_at
                FROM language_examples e
-               JOIN language_example_reviews teacher ON teacher.example_id=e.id
-                 AND teacher.review_round=e.review_round AND teacher.reviewer_role='teacher'
-                 AND teacher.action='approve' AND teacher.hindi=e.hindi AND teacher.target=e.target
-                 AND teacher.writing_system=e.writing_system
-                 AND teacher.source_note=e.source_note
-               JOIN language_example_reviews expert ON expert.example_id=e.id
-                 AND expert.review_round=e.review_round AND expert.reviewer_role='community_expert'
-                 AND expert.action='approve' AND expert.hindi=e.hindi AND expert.target=e.target
-                 AND expert.writing_system=e.writing_system
-                 AND expert.source_note=e.source_note
-               WHERE e.lang=? AND e.status='approved' ORDER BY e.id""", (lang,),
+               WHERE e.lang=? AND e.status='approved'
+                 AND EXISTS (SELECT 1 FROM language_example_reviews r WHERE r.example_id=e.id
+                   AND r.review_round=e.review_round AND r.action='approve' AND r.hindi=e.hindi
+                   AND r.target=e.target AND r.writing_system=e.writing_system AND r.source_note=e.source_note)
+               ORDER BY e.id""", (lang,),
         ).fetchall()
-    return [json.dumps({
-        "id": row["id"], "hindi": row["hindi"], "target": row["target"],
-        "language": row["lang"], "writing_system": row["writing_system"],
-        "source_note": row["source_note"],
-        "contributor_role": row["contributor_role"],
-        "reviewers": {"teacher": row["teacher_reviewed"], "community_expert": row["expert_reviewed"]},
-        "human_validated": True, "synthetic": False,
-    }, ensure_ascii=False) for row in rows]
+        result = []
+        for row in rows:
+            roles = [r["reviewer_role"] for r in con.execute(
+                """SELECT DISTINCT reviewer_role FROM language_example_reviews
+                   WHERE example_id=? AND review_round=? AND action='approve' AND hindi=? AND target=?
+                     AND writing_system=? AND source_note=? ORDER BY reviewer_role""",
+                (row["id"], row["review_round"], row["hindi"], row["target"],
+                 row["writing_system"], row["source_note"]),
+            ).fetchall()]
+            result.append(json.dumps({
+                "id": row["id"], "hindi": row["hindi"], "target": row["target"],
+                "language": row["lang"], "writing_system": row["writing_system"],
+                "source_note": row["source_note"], "contributor_role": row["contributor_role"],
+                "reviewers": roles, "reviewer_roles": roles,
+                "human_validated": True, "synthetic": False,
+                "reviewed_at": row["reviewed_at"],
+            }, ensure_ascii=False))
+    return result
 
 
 def export_jsonl():
@@ -1393,23 +1373,24 @@ def export_glossary_jsonl(lang):
         raise core.ApiError(400, "Choose Ho or Mundari.")
     with core.db() as con:
         rows = con.execute(
-            """SELECT g.hindi,g.word,g.source,
+            """SELECT g.id,g.hindi,g.word,g.source,
                       (SELECT MAX(e.reviewed) FROM glossary_review_events e
                        WHERE e.glossary_id=g.id AND e.review_round=g.review_round
                          AND e.action='approve' AND e.hindi=g.hindi AND e.word=g.word) AS reviewed_at
+                      ,(SELECT GROUP_CONCAT(DISTINCT e.reviewer_role) FROM glossary_review_events e
+                        WHERE e.glossary_id=g.id AND e.review_round=g.review_round
+                          AND e.action='approve' AND e.hindi=g.hindi AND e.word=g.word) AS reviewer_roles
                FROM glossary g WHERE g.lang=? AND g.status='approved'
                  AND EXISTS (SELECT 1 FROM glossary_review_events e WHERE e.glossary_id=g.id
-                   AND e.review_round=g.review_round AND e.reviewer_role='teacher'
-                   AND e.action='approve' AND e.hindi=g.hindi AND e.word=g.word)
-                 AND EXISTS (SELECT 1 FROM glossary_review_events e WHERE e.glossary_id=g.id
-                   AND e.review_round=g.review_round AND e.reviewer_role='community_expert'
-                   AND e.action='approve' AND e.hindi=g.hindi AND e.word=g.word)
+                   AND e.review_round=g.review_round AND e.action='approve'
+                   AND e.hindi=g.hindi AND e.word=g.word)
                ORDER BY g.hindi,g.word""",
             (lang,),
         ).fetchall()
     return "".join(json.dumps({
         "hindi": row["hindi"], "target": row["word"], "language": lang,
-        "data_type": "reviewed_word_pair", "reviewer_roles": ["teacher", "community_expert"],
+        "data_type": "reviewed_word_pair",
+        "reviewer_roles": (row["reviewer_roles"] or "").split(",") if row["reviewer_roles"] else [],
         "reviewed_at": row["reviewed_at"], "source": row["source"],
     }, ensure_ascii=False) + "\n" for row in rows)
 
@@ -1533,6 +1514,11 @@ class AudioReviewRequest(BaseModel):
 class VisualReviewRequest(BaseModel):
     action: Literal["approve", "reject"]
     viewed: bool = False
+
+
+class VisualGenerationRequest(BaseModel):
+    prompt: str = Field(min_length=5, max_length=1000)
+    alt_text: str = Field(min_length=5, max_length=400)
 
 
 class GlossarySubmissionRequest(BaseModel):
@@ -2592,6 +2578,16 @@ def icon():
     return FileResponse(core.HERE / "icon.svg", media_type="image/svg+xml")
 
 
+@app.get("/learning-resources/{filename}")
+def learning_resource(filename: str):
+    if filename not in {"ho_hindi.pdf", "ho_hindi_compressed.pdf", "mundari_hundi.pdf"}:
+        raise HTTPException(status_code=404, detail="Learning resource not found.")
+    path = core.HERE / "learning_resources" / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Learning resource not found.")
+    return FileResponse(path, media_type="application/pdf", headers={"Cache-Control": "public, max-age=3600"})
+
+
 @app.get("/sw.js")
 def service_worker():
     return Response(SERVICE_WORKER_JS, media_type="application/javascript; charset=utf-8",
@@ -2790,8 +2786,6 @@ def get_review_visual(item_id: int, reviewer: dict = Depends(teacher_token)):
         ).fetchone()
     if not row or row["status"] != "approved" or row["visual_status"] != "awaiting_review":
         raise core.ApiError(404, "That lesson visual is not waiting for review.")
-    if row["visual_author"] == reviewer["role"]:
-        raise core.ApiError(403, "A different reviewer role must inspect this visual.")
     return visual_file_response(row["visual_filename"])
 
 
@@ -3348,9 +3342,9 @@ async def upload_visual(item_id: int, file: UploadFile = File(...), alt_text: st
             (item_id, DEMO_MODEL),
         ).fetchone()
         if not row or row["status"] != "approved":
-            raise core.ApiError(409, "Both text reviews must approve the lesson before attaching a visual.")
+            raise core.ApiError(409, "The lesson text must be approved before attaching a visual.")
         if row["visual_status"] == "awaiting_review":
-            raise core.ApiError(409, "This visual is already waiting for the other reviewer role.")
+            raise core.ApiError(409, "This visual is already waiting for a reviewer decision.")
         if row["visual_status"] in ("rejected", "approved") and row["visual_author"] != reviewer["role"]:
             raise core.ApiError(403, "Only the reviewer role that submitted this visual can replace it.")
 
@@ -3379,6 +3373,72 @@ async def upload_visual(item_id: int, file: UploadFile = File(...), alt_text: st
         raise
     remove_visual_file(old_filename)
     return {"id": item_id, "visual_status": "awaiting_review", "reviewer_role": reviewer["role"]}
+
+
+@app.post("/api/visual/{item_id}/generate", status_code=201)
+async def generate_visual(item_id: int, body: VisualGenerationRequest,
+                          reviewer: dict = Depends(teacher_token)):
+    image_prompt = " ".join(body.prompt.split())
+    alt_text = " ".join(body.alt_text.split())
+    with db() as con:
+        row = con.execute(
+            "SELECT status,visual_status,visual_author,hindi,final FROM items WHERE id=? AND model!=?",
+            (item_id, DEMO_MODEL),
+        ).fetchone()
+    if not row or row["status"] != "approved":
+        raise core.ApiError(409, "The lesson text must be approved before generating a visual.")
+    if row["visual_status"] == "awaiting_review":
+        raise core.ApiError(409, "This visual is already waiting for a reviewer decision.")
+    if row["visual_status"] in ("rejected", "approved") and row["visual_author"] != reviewer["role"]:
+        raise core.ApiError(403, "Only the reviewer role that submitted this visual can replace it.")
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        raise core.ApiError(503, "Set HF_TOKEN with Hugging Face Inference Providers access before generating an AI visual.")
+
+    prompt = (
+        "Create one clear, child-friendly educational illustration for primary-school students. "
+        "Accurately and respectfully depict the core idea in the lesson. Use a simple, culturally neutral setting; "
+        "avoid stereotypes. Do not include text, letters, numbers, signage, labels, logos, or watermarks. "
+        "Do not depict a named or identifiable person. The reviewer description may be written in Hindi or English.\n"
+        f"Reviewer image description: {image_prompt[:1000]}\n"
+        f"Hindi source: {row['hindi'][:1000]}\n"
+        f"Approved Santali lesson: {row['final'][:1000]}"
+    )
+
+    def request_image():
+        try:
+            from huggingface_hub import InferenceClient
+            client = InferenceClient(
+                model=HF_VISUAL_MODEL, provider=HF_VISUAL_PROVIDER, token=token, timeout=180,
+            )
+            image = client.text_to_image(prompt, width=768, height=768, num_inference_steps=4)
+            output = BytesIO()
+            image.save(output, format="PNG")
+            return output.getvalue()
+        except ImportError as exc:
+            raise core.ApiError(503, "Hugging Face image generation requires huggingface_hub in the server environment.") from exc
+        except Exception as exc:
+            detail = re.sub(r"hf_[A-Za-z0-9]{16,}", "hf_[redacted]", str(exc))
+            folded = detail.casefold()
+            if any(term in folded for term in ("401", "403", "permission", "unauthorized", "forbidden", "token")):
+                message = "Hugging Face rejected the request. Use a token with Inference Providers permission and confirm your account can use the selected provider. "
+            elif any(term in folded for term in ("402", "credit", "billing", "payment")):
+                message = "Hugging Face reports that inference credits or billing are unavailable for this account. "
+            else:
+                message = f"Hugging Face provider '{HF_VISUAL_PROVIDER}' could not generate the image. Check provider availability, model access, and account credits. "
+            raise core.ApiError(
+                502,
+                message + detail[:240],
+            ) from exc
+
+    raw = await asyncio.to_thread(request_image)
+    generated_file = UploadFile(file=BytesIO(raw), filename="ai-generated.png")
+    credit = f"AI-generated with {HF_VISUAL_MODEL} via Hugging Face provider {HF_VISUAL_PROVIDER}"
+    result = await upload_visual(item_id, generated_file, alt_text, credit, reviewer)
+    result["generated"] = True
+    result["model"] = HF_VISUAL_MODEL
+    result["provider"] = HF_VISUAL_PROVIDER
+    return result
 
 
 @app.delete("/api/visual/{item_id}")
@@ -3413,8 +3473,6 @@ def review_visual(item_id: int, body: VisualReviewRequest, reviewer: dict = Depe
         ).fetchone()
         if not row or row["status"] != "approved" or row["visual_status"] != "awaiting_review":
             raise core.ApiError(409, "That visual is no longer waiting for review.")
-        if row["visual_author"] == reviewer["role"]:
-            raise core.ApiError(403, "A different reviewer role must inspect this visual.")
         accepted = body.action == "approve"
         con.execute(
             "UPDATE items SET visual_status=?,visual_reviewer=?,visual_reviewed=? WHERE id=?",
@@ -3714,7 +3772,7 @@ def _approved_whole_document(document_id, verify_review_events=False, detail=Non
         if community_language:
             target = str(segment.get("target") or "").strip()
             review_id = segment.get("language_example_id")
-            if segment.get("language_review_status") != "approved" or not target or segment.get("language_review_roles_done", 0) < 2:
+            if segment.get("language_review_status") != "approved" or not target or segment.get("language_review_roles_done", 0) < 1:
                 return None
         else:
             target = str(segment.get("final") or "").strip()
@@ -3722,7 +3780,7 @@ def _approved_whole_document(document_id, verify_review_events=False, detail=Non
             required = REQUIRED_REVIEWERS
             if segment.get("review_status") != "approved" or not target or segment.get("review_roles_done", 0) < required:
                 return None
-        required = 2 if community_language else REQUIRED_REVIEWERS
+        required = 1 if community_language else REQUIRED_REVIEWERS
         if verify_review_events and role_counts.get(review_id, 0) < required:
             return None
         translated.append(target)
@@ -3831,7 +3889,7 @@ def build_student_document_pdf(document, translated_sections, publication_status
         f"AI-generated Santali draft - not yet approved by {REQUIRED_REVIEWERS} reviewer(s)"
         if publication_status == "ai_draft"
         else (f"Reviewed Santali translation - approved by {REQUIRED_REVIEWERS} reviewer(s)"
-              if language == SUPPORTED_LANGUAGE else f"Reviewed {language} translation - approved by both reviewer roles")
+              if language == SUPPORTED_LANGUAGE else f"Reviewed {language} translation - approved by one reviewer")
     )
     html = (
         f"<!doctype html><html lang='{target_html_language}'><head><meta charset='utf-8'></head><body>"

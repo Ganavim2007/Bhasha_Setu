@@ -18,9 +18,12 @@ Then open http://localhost:8000
 
 How each language works:
     Santali   the model drafts in the sat_Beng Bengali-script setting; a teacher and a community
-              language expert must review each item before it reaches students.
+              language expert sign in to review items; the configured reviewer count controls approval.
     Ho        no translation model exists; the app has a small Ho-Hindi word lookup list.
     Mundari   no translation model exists; the app has a small Mundari-Hindi word lookup list.
+
+Ho and Mundari word pairs and sentence pairs are published after one signed-in reviewer approves
+the exact entry. Lesson visuals also require one signed-in reviewer approval.
 """
 import csv
 import difflib

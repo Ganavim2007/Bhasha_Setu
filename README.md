@@ -6,14 +6,14 @@ Bhasha Setu is an offline-first classroom prototype that helps teachers prepare 
 
 - An installable PWA caches the app shell. Approved lessons can be stored on each device for offline study; the student view refreshes on reconnect, when the app returns to the foreground, and once a minute while visible.
 - The student landing page is the first screen. Students can search approved lesson text, save lessons on the device, and open saved PDF sections without seeing the same section twice.
-- Student view offers Santali, Ho, and Mundari. Ho and Mundari lessons are community-translated entries and appear only after both reviewer roles approve the same Hindi text, translation, writing system, and source note. Their approved text is cached locally for offline study and refreshed when connected.
+- Student view offers Santali, Ho, and Mundari. Ho and Mundari lessons are community-translated entries and appear after one reviewer approves the Hindi text, translation, writing system, and source note. Their approved text is cached locally for offline study and refreshed when connected.
 - Once opened online, the Ho/Mundari lookup caches the reviewed word list locally and supports offline search. It syncs when opened again or while the app remains visible.
-- Reviewers can submit Hindi-to-Ho and Hindi-to-Mundari curriculum text for human translation or contribute a completed pair. A teacher and a community language expert must approve the exact sentence, writing system, and source note before it appears in Student view; approved lessons can be returned for correction and are exported with review provenance.
+- Reviewers can submit Hindi-to-Ho and Hindi-to-Mundari curriculum text for human translation or contribute a completed pair. One reviewer must approve the exact sentence, writing system, and source note before it appears in Student view; approved lessons can be returned for correction and are exported with review provenance.
 - Signed-in reviewers can upload PDF, DOCX, PPTX, and UTF-8 TXT files up to 20 MB. PDF/PPTX inputs are limited to 120 pages/slides and extracted material to 2,000 review sections. PDF, Word, and PowerPoint text is read in source order; original page styling, images, and tables are not retained.
 - Hindi source files can be sent to Santali, Ho, or Mundari. Santali gets a Hindi-to-Santali model draft; Ho and Mundari enter fluent-speaker translation tasks. English source files currently use the Santali path only: the installed multilingual model first creates a Hindi bridge, then drafts Santali. Reviewers see the English original and Hindi bridge. This English bridge has not been evaluated for curriculum accuracy, and every draft requires human correction or approval by the configured reviewer count.
 - Each source page/slide or document section is kept as a separate review item with its source order. As soon as all Santali sections have AI drafts, students get one generated, continuously flowing PDF clearly marked as unreviewed. Each original Hindi or English section is followed by its paired Santali translation. After every Santali item passes the configured reviewer count, the student library offers the reviewed PDF. Ho and Mundari full documents remain unavailable until human translation and review are complete. PDFs do not insert a page break for each source page. PyMuPDF lays out the text and shapes complex scripts; images and table layout are not reproduced, while extracted table text flows as regular text.
 - If a connection drops during upload, the selected file is saved in the browser's IndexedDB outbox with its source and target language. It retries when the device reconnects and a reviewer session is active. Browsers with Background Sync can wake the open app to start that retry.
-- Review uses separate teacher and community-expert passcodes. Reviewers submit translations directly. By default, one signed-in reviewer can approve a Santali lesson for students; `BS_REQUIRED_REVIEWERS=2` restores the two-role check. Ho and Mundari sentence and word-pair content still requires both roles. Study-material cards and review sentences have individual Remove controls; removing a material cancels its queued translation, and removing a sentence removes it from linked document drafts.
+- Review uses separate teacher and community-expert passcodes. By default, one signed-in reviewer can approve a Santali lesson for students; `BS_REQUIRED_REVIEWERS=2` restores the two-role check for Santali. Ho and Mundari sentence and word-pair entries are published after one reviewer approves the exact content. A lesson visual also needs one reviewer approval; its uploader may be that reviewer. Study-material cards and review sentences have individual Remove controls; removing a material cancels its queued translation, and removing a sentence removes it from linked document drafts.
 - A signed-in reviewer can flag a published translation from Student view. It disappears from student lessons and saved packs on the next sync, then returns to the configured Santali review flow with the correction reason and requesting role visible. The reason, requesting role, review round, and request time are included in the approved review JSONL export. The reason stays with that review cycle even if an edit starts another round; the lesson is republished after the configured reviewer count approves the same text again.
 - The review page renders a rolling batch of at most 20 drafts and shows the total waiting. Study-material progress shows translation and review status; the second-review count appears when two Santali reviewers are configured.
 - Offline lesson packs include approved translations, recordings, and visuals. When the device syncs, saved sections update to the latest approved translation; sections that are no longer approved are removed. Changed recordings and visuals are fetched again when available. Packs from older approval formats are not shown.
@@ -21,8 +21,8 @@ Bhasha Setu is an offline-first classroom prototype that helps teachers prepare 
 - Short lesson read-aloud uses a matching Hindi, Santali, Ho, or Mundari voice installed on the student's device when available. Voice availability varies by device. Approved Santali lessons can also use locally generated speech from the optional Santali TTS model.
 - The student-facing **Audio** section lets students upload a Hindi or English PDF for Santali translation, then listen to its sections in order. It plays approved Santali recordings when every section has one; otherwise text playback requires an installed Santali voice. Bengali-script Santali is still spoken Santali, so a Bengali voice is not used as a substitute. Text is saved in IndexedDB on that device after first opening it; approved recordings can be cached for offline playback.
 - After the configured number of reviewers approve a Santali lesson, one reviewer can generate an AI speech draft on the school server, record it in a secure browser, or upload a recording. A reviewer listens through the entire clip and approves it before students can hear it. Generated clips are labeled as AI speech; human recordings stay on the school server. Each device caches approved audio after playback. Ho and Mundari TTS are not included.
-- A reviewer can attach a school-approved still image to an approved lesson with a Santali accessible description and source credit. The other role must inspect and approve the exact image and description before students see it. Approved images can be saved in PDF lesson packs for offline study; uploads are resized, metadata is stripped, and files are stored under `lesson_visuals/`, which Git ignores. If the translation changes, the image must be reviewed again and the recording must be made again.
-- Ho and Mundari primer entries imported through OCR start in a private review queue. Word lookup shows only entries checked by both the teacher and community language expert roles. Reviewers can correct an OCR pair, add a new pair, reject a bad source entry, or reopen a published pair for correction. Reviewed pairs can be exported with source and reviewer provenance; they remain separate from the Santali sentence-training dataset.
+- A reviewer can upload a school-approved still image or generate an AI image draft for an approved Santali lesson from **Visuals**. Enter the image prompt in Hindi or English and the accessible alt description in Santali. Generation uses Hugging Face Inference Providers with `HF_TOKEN`; the default model is `black-forest-labs/FLUX.1-schnell` and provider is `nscale`, configurable with `BS_VISUAL_MODEL` and `BS_VISUAL_PROVIDER`. The prompt and approved lesson text are sent to Hugging Face, and inference may use account credits; the token needs Inference Providers permission. Images remain drafts until one reviewer approves the image, Santali description, and source credit; the uploader can approve. Approved images can be saved in PDF lesson packs for offline study; images are resized, metadata is stripped, and files are stored under `lesson_visuals/`, which Git ignores. If the translation changes, the image must be reviewed again and the recording must be made again.
+- Ho and Mundari primer entries imported through OCR start in a private review queue. Word lookup shows only entries approved by a signed-in reviewer. Reviewers can correct an OCR pair, add a new pair, reject a bad source entry, or reopen a published pair for correction. Reviewed pairs can be exported with source and reviewer provenance; they remain separate from the Santali sentence-training dataset.
 - Students can increase or reduce text size and switch on high contrast. These settings are saved on the device.
 - Twice-reviewed translations can be exported as JSONL with both reviewer roles and edit information for a separately checked training process.
 - A signed-in teacher or community expert can download a school backup ZIP from **Progress**. It contains consistent snapshots of both SQLite databases plus stored lesson audio and visuals; it excludes model weights, secrets, staged PDFs, and device-only offline caches.
@@ -45,19 +45,26 @@ Students can also open **Audio** and submit a PDF directly. These uploads use th
 
 ## Collect Ho and Mundari lessons
 
-Sign in and open **Study materials**. Choose Ho or Mundari and enter the class's confirmed writing system before uploading Hindi source material. Extracted sections enter the **Ho/Mundari sentences** human translation queue with source page/section references. A fluent reviewer fills in each target translation; the teacher and community language expert then approve the exact version. Individual approved lessons appear in Student view. A whole-document PDF is listed only after every section is approved. An authorized reviewer can return an approved lesson for correction; the full document disappears from the student list until all sections pass review again.
+Sign in and open **Study materials**. Choose Ho or Mundari and enter the class's confirmed writing system before uploading Hindi source material. Extracted sections enter the **Ho/Mundari sentences** human translation queue with source page/section references. A fluent reviewer fills in each target translation and one signed-in reviewer approves the exact version. Individual approved lessons appear in Student view. A whole-document PDF is listed only after every section is approved. An authorized reviewer can return an approved lesson for correction; the full document disappears from the student list until all sections pass review again.
 
-Download a language-specific JSONL file from that page. Each row records the target language, writing system, source note, contributor role, reviewer roles and review timestamps. The app does not generate Ho or Mundari translations: human-produced, dual-approved pairs can be shown as lessons and can support future model development. They are not mixed into the Santali training corpus. Review the language data, orthography, licensing, and held-out evaluation with fluent speakers before training or classroom use.
+Download a language-specific JSONL file from that page. Each row records the target language, writing system, source note, contributor role, actual reviewer roles, and review timestamp. The app does not generate Ho or Mundari translations: human-produced, one-reviewer-approved pairs can be shown as lessons and can support future model development. The Santali training script still requires rows checked by both roles, so single-reviewer Ho/Mundari exports are not accepted by that pipeline. Review language data, orthography, licensing, and held-out evaluation with fluent speakers before training or classroom use.
 
 ## Record and review lesson audio
 
 After the configured Santali text review is complete, sign in and open **Audio**. For Santali, choose **Generate Santali audio** on a lesson to create an AI speech draft from its approved text. The first generation needs the optional speech dependencies, accepted access to [AI4Bharat Indic Parler-TTS](https://huggingface.co/ai4bharat/indic-parler-tts), a Hugging Face read token, and an internet connection to download several GB of model weights. The model is cached on the school server and later generation can run offline. CPU-only generation may take several minutes and needs substantial memory. Santali speech pronunciation has not been independently evaluated, so generated clips stay drafts until a fluent reviewer listens and approves them. Only approved clips appear in Student view.
 
-On Windows, stop the server with Ctrl+C, install the optional runtime in the project's active virtual environment, accept the model access terms in a browser, and set a read token in the same PowerShell window before restarting:
+On Windows, use the dedicated Python 3.11 TTS environment so both the API and its speech helper can import the optional packages. Accept the model access terms in a browser, copy a Hugging Face read token, then run these commands from the project folder in one PowerShell window:
 
 ```powershell
+if (-not (Test-Path .\.venv-tts\Scripts\python.exe)) { py -3.11 -m venv .venv-tts }
+.\.venv-tts\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python -m pip install -r requirements-tts.txt
-$env:HF_TOKEN = "hf_your_read_token"
+$env:HF_TOKEN = (Get-Clipboard -Raw).Trim()
+$env:BS_TEACHER_PIN = "choose-a-private-teacher-passcode"
+$env:BS_EXPERT_PIN = "choose-a-different-expert-passcode"
+$env:BS_REQUIRED_REVIEWERS = "1"
+$env:BS_MOCK = "0"
 python api.py
 ```
 
@@ -77,7 +84,7 @@ The app does not start back-translation or training automatically. One command c
 python training/backtranslate_santali.py .\reviewed_santali.txt --output .\training\synthetic_candidates.jsonl
 ```
 
-The script uses the NLLB base model to generate Hindi from Santali and writes provenance fields with `synthetic: true` and `human_validated: false`. Review every pair before training; the training script rejects these rows until they are explicitly marked as checked by both roles. Reviewed corrections can train a separate candidate adapter with a distinct holdout set:
+The script uses the NLLB base model to generate Hindi from Santali and writes provenance fields with `synthetic: true` and `human_validated: false`. Review every pair before training; the training script rejects these rows until they are explicitly marked as checked by both roles. Ho/Mundari sentence exports now use one reviewer by default and are not directly accepted by the Santali training script. Reviewed corrections can train a separate candidate adapter with a distinct holdout set:
 
 ```powershell
 python -m pip install -r requirements-training.txt
@@ -124,6 +131,42 @@ Open <http://localhost:8000>. The passcodes must each have at least eight charac
 The server does not hot-reload Python changes. After updating the project, stop the old server with Ctrl+C in its PowerShell window and run `python api.py` again there, then reload the browser page. The app warns when the page and server versions do not support the same Ho/Mundari lesson features.
 
 Both passcodes remain configured because the app also uses the teacher and community-expert roles for Ho/Mundari data and media review. Either role can approve a Santali lesson when `BS_REQUIRED_REVIEWERS=1` (the default). Set `$env:BS_REQUIRED_REVIEWERS = "2"` in PowerShell before `python api.py` to require both roles. Keep the passcodes private. This shared-passcode setup is for a supervised pilot, not a production identity system.
+
+### Automated Windows setup
+
+Run `setup.ps1` from the project folder to create or reuse `.venv` and install the core dependencies. Add `-StartServer` to securely enter the two reviewer passcodes and start real translation mode; the passcodes are not written to a file:
+
+```powershell
+.\setup.ps1 -StartServer
+```
+
+Optional components are installed only when requested. Tesseract OCR itself and its language data must be installed separately. `HF_TOKEN` is optional for the public NLLB model. When launching with `-WithTts`, the script securely prompts for a Hugging Face read token if `HF_TOKEN` is not already set; it does not save the token to disk.
+
+```powershell
+.\setup.ps1 -CpuOnly -WithOcr -TesseractPath "C:\Program Files\Tesseract-OCR\tesseract.exe" -WithTts -WithTraining -RequiredReviewers 1 -StartServer
+```
+
+`-CpuOnly` installs CPU PyTorch first. The first real-model startup downloads the NLLB weights. To install dependencies without starting the server, omit `-StartServer`.
+If port 8000 is already occupied, choose a free port with `-Port 8001`.
+`-WithTts` always uses a separate `.venv-tts` environment. If the current Python is newer than 3.11, the script selects Python 3.11 through the `py` launcher. This keeps the TTS packages isolated from `.venv`.
+
+### Linux and macOS
+
+`setup.ps1` is Windows-only. On Linux or macOS, use the equivalent commands below; install Tesseract separately for OCR, and install optional requirement files only when needed:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+# Optional: python -m pip install -r requirements-ocr.txt
+# Optional: python -m pip install -r requirements-tts.txt
+# Optional: python -m pip install -r requirements-training.txt
+export BS_TEACHER_PIN='choose-a-private-teacher-passcode'
+export BS_EXPERT_PIN='choose-a-different-expert-passcode'
+export BS_REQUIRED_REVIEWERS=1
+python api.py
+```
 
 ## Classroom Wi-Fi
 

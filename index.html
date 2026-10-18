@@ -525,7 +525,7 @@
 
   <section class="panel" id="tab-pdf" hidden>
     <p class="banner" id="pdf-locked">A teacher or community language expert must sign in to upload study materials and view server drafts. Lesson packs saved on this device remain available below.</p>
-    <p class="lead">Upload Hindi or English study material and choose the mother tongue. After Santali translation finishes, students can open one continuous PDF marked as an AI draft. By default, one reviewer approves each section before the reviewed PDF is published. Set BS_REQUIRED_REVIEWERS=2 to require both roles. Remove a material to stop its translation and delete its generated PDF. Ho and Mundari documents still need human translation and approval by both roles.</p>
+    <p class="lead">Upload Hindi or English study material and choose the mother tongue. After Santali translation finishes, students can open one continuous PDF marked as an AI draft. By default, one reviewer approves each section before the reviewed PDF is published. Set BS_REQUIRED_REVIEWERS=2 to require both roles. Remove a material to stop its translation and delete its generated PDF. Ho and Mundari documents still need human translation and one reviewer approval.</p>
     <div class="upload-box" id="upload-box" hidden>
       <form id="pdf-form">
         <label for="pdf-source-language"><strong>Language in the uploaded file</strong></label>
@@ -615,13 +615,13 @@
     <p class="banner" id="visual-locked">A teacher or community language expert must sign in to add or review lesson visuals.</p>
     <p class="eyebrow">Classroom picture library</p>
     <h2>Review lesson visuals</h2>
-    <p class="lead">Only lessons approved by both text reviewers can receive a picture. Add a school-approved image, an accessible Santali description, and its source. A different reviewer role checks all three before it appears to students.</p>
+    <p class="lead">Only lessons with approved text can receive a picture. Upload a school-approved image or generate an AI draft, add an accessible Santali description, and have one signed-in reviewer approve it before it appears to students.</p>
     <div class="workflow-steps" aria-label="Visual approval steps">
-      <div class="workflow-step"><b>1 · Approve the lesson text</b><p>Finish both text reviews in Review or Study materials.</p></div>
+      <div class="workflow-step"><b>1 · Approve the lesson text</b><p>Finish the configured text review in Review or Study materials.</p></div>
       <div class="workflow-step"><b>2 · Add a useful image</b><p>Choose a still image the school is allowed to share and describe it in Santali.</p></div>
-      <div class="workflow-step"><b>3 · Check the source</b><p>The other reviewer inspects the image, description, and credit.</p></div>
+      <div class="workflow-step"><b>3 · Review the visual</b><p>One signed-in reviewer checks the image, description, and credit.</p></div>
     </div>
-    <p class="note">Images are resized and metadata is removed on the school server. Use an image the school is allowed to share.</p>
+    <p class="note">Images are resized and metadata is removed on the school server. AI generation sends your Hindi/English image prompt and approved lesson text to Hugging Face; inference may use account credits. Generated images stay drafts until one signed-in reviewer approves them.</p>
     <h2>Visuals ready for your role <span id="visual-count" class="note"></span></h2>
     <p id="visual-status" class="note" role="status" aria-live="polite"></p>
     <div id="visual-work"></div>
@@ -687,12 +687,12 @@
       <button class="btn quiet" id="export-glossary" type="button">Download reviewed words</button>
     </div>
     <p id="glossary-export-status" class="note" role="status" aria-live="polite"></p>
-    <p class="note" style="max-width:46rem">Exports contain only pairs checked by both roles, with source and review provenance. Word pairs are a separate lexicon dataset; they are not sentence-training examples for the current Santali model.</p>
+    <p class="note" style="max-width:46rem">Exports contain pairs approved by one reviewer, with source and review provenance. Word pairs are a separate lexicon dataset; they are not sentence-training examples for the current Santali model.</p>
     </div>
   </section>
 
   <section class="panel" id="tab-words" hidden>
-    <p class="lead">Search Ho and Mundari word pairs that a teacher and a community language expert have checked. OCR-imported primer entries stay hidden from learners until both roles approve the exact pair.</p>
+    <p class="lead">Search Ho and Mundari word pairs checked by a signed-in reviewer. OCR-imported primer entries stay hidden from learners until one reviewer approves the exact pair.</p>
     <label for="q">Search an approved Hindi, Ho, or Mundari word</label>
     <input type="search" id="q" lang="hi" aria-label="Search an approved Hindi, Ho or Mundari word" placeholder="Type a Hindi word">
     <div id="words"></div>
@@ -702,7 +702,7 @@
       <p id="glossary-status" class="note" role="status" aria-live="polite"></p>
       <div id="glossary-work"></div>
       <h2>Submit a word pair</h2>
-      <p class="note">New entries stay hidden from learners until the other reviewer role checks them. Confirm local spelling with a fluent speaker.</p>
+      <p class="note">New entries stay hidden from learners until one reviewer checks them. Confirm local spelling with a fluent speaker.</p>
       <form id="glossary-form" class="upload-box">
         <label for="glossary-lang">Language</label>
         <select id="glossary-lang"><option value="ho">Ho</option><option value="mun">Mundari</option></select>
@@ -718,8 +718,8 @@
   <section class="panel" id="tab-corpus" hidden>
     <p class="banner" id="corpus-locked">Sign in as a teacher or community language expert to contribute and review Ho/Mundari sentence examples.</p>
     <div id="corpus-tools" hidden>
-      <p class="lead">Build a carefully reviewed Hindi–Ho and Hindi–Mundari lesson collection with teachers and community language experts. This prototype has no Ho or Mundari translation model: source-only requests need a fluent human translator. A lesson appears to students only after both roles approve the exact translation.</p>
-      <p class="note">Record the writing system used for each target sentence and cite a textbook/page or community source when available. Do not include student names or other personal information. A pair enters the export only after both reviewer roles approve the exact text, writing system, and source note.</p>
+      <p class="lead">Build a human-translated Hindi–Ho and Hindi–Mundari lesson collection. This prototype has no Ho or Mundari translation model: source-only requests need a fluent human translator. A lesson appears to students after one signed-in reviewer approves the exact translation.</p>
+      <p class="note">Record the writing system used for each target sentence and cite a textbook/page or community source when available. Do not include student names or other personal information. A pair enters the export after one reviewer approves the exact text, writing system, and source note.</p>
       <div id="corpus-counts" class="ledger" aria-live="polite"></div>
       <h2>Send curriculum text for a human translation</h2>
       <p class="note">Use this when a Hindi textbook sentence needs translation. A reviewer writes the Ho or Mundari text; a second role checks that exact version before it appears to students.</p>
@@ -747,7 +747,7 @@
         <input id="corpus-script" type="text" maxlength="80" placeholder="For example: Warang Citi, Devanagari, Mundari Bani, Roman" required>
         <label for="corpus-source">Source or textbook and page (optional)</label>
         <input id="corpus-source" type="text" maxlength="300" placeholder="For example: Grade 2 science book, page 8">
-        <button class="btn" type="submit">Send for two-role review</button>
+        <button class="btn" type="submit">Submit for reviewer approval</button>
         <p id="corpus-submit-status" class="note" role="status" aria-live="polite"></p>
       </form>
       <h2>Sentence pairs waiting for your role</h2>
@@ -1733,7 +1733,7 @@ async function loadMyReviews() {
     box.hidden = false;
     box.replaceChildren(...(items.length ? items.map((item) => {
       const state = item.submission_status === 'approved' ? 'Approved for students'
-        : item.submission_status === 'awaiting_review' ? 'Submitted · awaiting the other reviewer role'
+        : item.submission_status === 'awaiting_review' ? 'Submitted · awaiting reviewer approval'
           : item.current_status === 'reviewing' && item.current_final === item.submitted_final
             ? 'Returned for another review round' : 'A newer translation has replaced this submission';
       const when = item.reviewed ? new Date(Number(item.reviewed) * 1000).toLocaleString() : '';
@@ -2480,6 +2480,9 @@ function renderVisualWorkItem(item) {
       required: true, id: 'visual-file-' + item.id,
       'aria-label': 'Choose a JPEG, PNG, or WebP visual' });
     const preview = h('img', { class: 'upload-preview', alt: 'Preview of the selected classroom image', hidden: true });
+    const imagePrompt = h('textarea', { class: 'explanation', rows: 3, minlength: 5, maxlength: 1000,
+      id: 'visual-prompt-' + item.id,
+      'aria-label': 'Image prompt in Hindi or English', placeholder: 'Describe the image in Hindi or English' });
     let previewUrl = '';
     imageInput.addEventListener('change', () => {
       if (previewUrl) {
@@ -2502,6 +2505,30 @@ function renderVisualWorkItem(item) {
       required: true, id: 'visual-credit-' + item.id,
       'aria-label': 'Image source or credit', placeholder: 'Image source or credit, for example book title and page' });
     const send = h('button', { class: 'btn', type: 'button' }, 'Send visual for review');
+    const generate = h('button', { class: 'btn quiet', type: 'button' }, 'Generate AI image draft');
+    generate.addEventListener('click', async () => {
+      if (imagePrompt.value.trim().length < 5) {
+        $('#visual-status').textContent = 'Describe the image in Hindi or English (at least 5 characters).';
+        imagePrompt.focus();
+        return;
+      }
+      if (altText.value.trim().length < 5) {
+        $('#visual-status').textContent = 'Add an accessible Santali description of at least 5 characters.';
+        altText.focus();
+        return;
+      }
+      generate.disabled = true;
+      $('#visual-status').textContent = 'Generating an AI image draft with Hugging Face. Your prompt and approved lesson text will be sent to the image provider; inference may use account credits.';
+      try {
+        const result = await post('/api/visual/' + item.id + '/generate', { prompt: imagePrompt.value, alt_text: altText.value });
+        $('#visual-status').textContent = 'AI image draft generated and is ready for one reviewer to inspect and approve.';
+        await loadVisualWork();
+        await loadMyVisuals();
+      } catch (e) {
+        $('#visual-status').textContent = e.message;
+        generate.disabled = false;
+      }
+    });
     send.addEventListener('click', async () => {
       const file = imageInput.files && imageInput.files[0];
       if (!file) { $('#visual-status').textContent = 'Choose a lesson image first.'; return; }
@@ -2522,15 +2549,17 @@ function renderVisualWorkItem(item) {
           updateTeacherUi();
         }
         if (!response.ok) throw new Error(result.detail || 'The visual could not be uploaded.');
-        $('#visual-status').textContent = 'Visual sent. The other reviewer role must inspect the image, description, and source.';
+        $('#visual-status').textContent = 'Visual sent for one reviewer to inspect the image, description, and source.';
         await loadVisualWork();
         await loadMyVisuals();
       } catch (e) { $('#visual-status').textContent = e.message; send.disabled = false; }
     });
     form.append(
       h('label', { for: imageInput.id }, 'Choose a JPEG, PNG, or WebP image (5 MB max)'), imageInput, preview,
+      h('label', { for: imagePrompt.id }, 'AI image prompt (Hindi or English)'), imagePrompt,
       h('label', { for: altText.id }, 'Accessible description in Santali'), altText,
       h('p', { class: 'note' }, 'Write what the picture shows and the learning idea it supports.'),
+      generate,
       h('label', { for: credit.id }, 'Image source or credit'), credit, send);
     card.append(h('p', { class: 'note' }, item.visual_status === 'rejected'
       ? 'The other reviewer requested a replacement image or description.'
@@ -2551,7 +2580,7 @@ async function loadVisualWork() {
     $('#visual-count').textContent = result.total ? '(' + result.total + ' waiting; showing ' + result.items.length + ')' : '';
     box.replaceChildren(...(result.items.length ? result.items.map(renderVisualWorkItem)
       : [workflowEmptyState('No lesson is ready for a visual yet',
-        'A lesson appears here after both reviewer roles approve its translation. Finish text review first, then attach a picture here for the other reviewer to check.', true)]));
+        'An approved lesson appears here. Finish the configured text review first, then attach a picture for one reviewer to inspect.', true)]));
   } catch (e) { $('#visual-status').textContent = e.message; }
 }
 
@@ -2564,7 +2593,7 @@ async function loadMyVisuals() {
     box.replaceChildren(...(result.items.length ? result.items.map((item) => {
       const state = item.visual_status === 'approved' ? 'Approved for students'
         : item.visual_status === 'rejected' ? 'Replacement requested by the other reviewer'
-        : 'Waiting for the other reviewer role';
+        : 'Waiting for one reviewer decision';
       const remove = h('button', { class: 'btn quiet', type: 'button' }, 'Withdraw visual');
       remove.addEventListener('click', async () => {
         remove.disabled = true;
@@ -2797,6 +2826,22 @@ function renderWholeStudentDocuments(language, offline = false) {
         (aiDraft ? 'Draft - still being checked' : approvalLabel) + ' - ' + document.segment_count + ' parts'),
       h('span', { class: 'btn quiet' }, aiDraft ? 'Read draft PDF' : 'Read PDF'));
   });
+  const bundledResource = {
+    ho: { href: '/learning-resources/ho_hindi_compressed.pdf', title: 'Ho Hindi Primer' },
+    mun: { href: '/learning-resources/mundari_hundi.pdf', title: 'Mundari Hundi' },
+  }[language];
+  if (bundledResource && !offline) {
+    cards.push(h('a', {
+      class: 'document-card',
+      href: bundledResource.href,
+      target: '_blank',
+      rel: 'noopener',
+      'aria-label': 'Open ' + bundledResource.title + ' PDF',
+    },
+      h('strong', {}, bundledResource.title),
+      h('div', { class: 'note' }, (language === 'ho' ? 'Ho' : 'Mundari') + ' learning resource - PDF'),
+      h('span', { class: 'btn quiet' }, 'Read PDF')));
+  }
   box.replaceChildren(...(cards.length ? cards : [h('p', { class: 'empty' }, offline
     ? 'No PDFs are saved on this device yet. Connect to school Wi-Fi and try again.'
     : language === 'sat'
@@ -3211,9 +3256,9 @@ function corpusCountsView(languages) {
     const counts = languages[lang] || {};
     rows.push(h('div', {}, h('dt', {}, corpusLanguageName(lang) + ' · needs first review'),
       h('dd', {}, String(counts.pending || 0))));
-    rows.push(h('div', {}, h('dt', {}, corpusLanguageName(lang) + ' · needs the other role'),
+    rows.push(h('div', {}, h('dt', {}, corpusLanguageName(lang) + ' · needs reviewer approval'),
       h('dd', {}, String(counts.reviewing || 0))));
-    rows.push(h('div', {}, h('dt', {}, corpusLanguageName(lang) + ' · approved by both'),
+    rows.push(h('div', {}, h('dt', {}, corpusLanguageName(lang) + ' · approved'),
       h('dd', {}, String(counts.approved || 0))));
     rows.push(h('div', {}, h('dt', {}, corpusLanguageName(lang) + ' · rejected, excluded'),
       h('dd', {}, String(counts.rejected || 0))));
@@ -3303,7 +3348,7 @@ async function loadLanguageCorpus() {
     $('#corpus-mine-count').textContent = mine.total ? '(' + mine.total + ' recent)' : '';
     $('#corpus-mine').replaceChildren(...(mine.items.length ? mine.items.map((item) => {
       const stateLabel = item.submission_status === 'approved' ? 'Approved for students'
-        : item.submission_status === 'awaiting_review' ? 'Submitted · awaiting the other reviewer role'
+        : item.submission_status === 'awaiting_review' ? 'Submitted · awaiting reviewer approval'
           : item.submission_status === 'rejected' ? 'Rejected · excluded from student lessons'
             : item.current_status === 'reviewing' && item.current_target === item.submitted_target
               ? 'Returned for another review round' : 'A newer translation has replaced this submission';
@@ -3323,7 +3368,7 @@ async function loadLanguageCorpus() {
       list.push(h('p', { class: 'note' }, 'Showing the most recent ' + approved.length + ' approved examples. Exports include all approved pairs.'));
     }
     $('#corpus-approved').replaceChildren(...(list.length ? list :
-      [h('p', { class: 'empty' }, 'No sentence examples have completed both reviewer checks yet.')]));
+      [h('p', { class: 'empty' }, 'No sentence examples have been approved by a reviewer yet.')]));
     $('#corpus-review-status').textContent = work.total
       ? work.total + ' pair(s) are waiting for your reviewer role; showing ' + work.items.length + '.' : '';
   } catch (e) { $('#corpus-review-status').textContent = e.message; }
@@ -3414,7 +3459,7 @@ async function loadWords() {
   }
   try {
     if (!r.total_words) {
-      box.replaceChildren(h('p', { class: 'empty' }, 'No Ho or Mundari word pairs have completed both reviewer checks yet.'));
+      box.replaceChildren(h('p', { class: 'empty' }, 'No Ho or Mundari word pairs have been approved by a reviewer yet.'));
     } else if (!$('#q').value.trim()) {
       box.replaceChildren(h('p', { class: 'empty' }, r.total_words + ' approved word pairs loaded' +
         (r.complete ? ' for offline search.' : '. The offline copy is partial; reconnect to search all approved entries.') +
@@ -3475,7 +3520,7 @@ async function syncApprovedWordCache() {
 function renderGlossaryWorkItem(item) {
   const language = item.lang === 'ho' ? 'Ho' : 'Mundari';
   const card = h('article', { class: 'audio-item' },
-    h('p', { class: 'label' }, language + ' pair · ' + (item.status === 'reviewing' ? 'awaiting the other role' : 'OCR or new submission')),
+    h('p', { class: 'label' }, language + ' pair · ' + (item.status === 'reviewing' ? 'awaiting reviewer approval' : 'OCR or new submission')),
     h('p', { class: 'note' }, 'Source: ' + item.source),
     item.rejection_note ? h('p', { class: 'note' }, 'Review note: ' + item.rejection_note) : null);
   const hindi = h('input', { type: 'text', maxlength: 60, lang: 'hi',
@@ -3536,7 +3581,7 @@ $('#glossary-form').addEventListener('submit', async (event) => {
     });
     $('#glossary-status').textContent = result.reopened
       ? 'Rejected entry resubmitted. Both roles must check it again.'
-      : 'New pair added. Submit your check; the other reviewer role must approve it before learners can find it.';
+      : 'New pair added. A reviewer must check and approve it before learners can find it.';
     $('#glossary-form').reset();
     await loadGlossaryWork();
     await loadWords();

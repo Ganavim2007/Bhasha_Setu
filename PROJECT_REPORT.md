@@ -11,9 +11,9 @@ The project has different capabilities by language:
 
 | Language | Curriculum translation | Reviewed lessons and lookup |
 |---|---|---|
-| Santali | Hindi-to-Santali draft using NLLB-200 and a LoRA adapter; target tag is `sat_Beng` (Bengali-script setting). An experimental English-to-Hindi-to-Santali bridge is also available, with no verified classroom accuracy benchmark. | Two-role reviewed lessons and complete translated documents; optional generated speech and human audio; reviewed still images. |
-| Ho | No machine-translation model. PDF text can become a human-translation task. | Human-produced, two-role reviewed lesson pairs and a separately reviewed Hindi-word lookup. Human audio recording is supported. |
-| Mundari | No machine-translation model. PDF text can become a human-translation task. | Human-produced, two-role reviewed lesson pairs and a separately reviewed Hindi-word lookup. Human audio recording is supported. |
+| Santali | Hindi-to-Santali draft using NLLB-200 and a LoRA adapter; target tag is `sat_Beng` (Bengali-script setting). An experimental English-to-Hindi-to-Santali bridge is also available, with no verified classroom accuracy benchmark. | Lessons and complete translated documents use the configured one- or two-reviewer text approval; optional generated speech and human audio; reviewed still images. |
+| Ho | No machine-translation model. PDF text can become a human-translation task. | Human-produced lesson pairs and Hindi-word lookup entries are published after one reviewer approves them. Human audio recording is supported. |
+| Mundari | No machine-translation model. PDF text can become a human-translation task. | Human-produced lesson pairs and Hindi-word lookup entries are published after one reviewer approves them. Human audio recording is supported. |
 
 This is not a three-language machine-translation system. It is a supervised pilot: Santali gets model-assisted drafts, and Ho/Mundari rely on fluent speakers. Student learning content can be cached for offline use, but translation, review, uploads, and server-side processing require a connection to the school server.
 
@@ -94,10 +94,10 @@ OCR is optional and local; it is not enabled merely by installing the Python wra
 
 ### Ho/Mundari words and sentence corpus
 
-- CSV seed words start pending; the public lookup returns only word pairs both roles approved.
+- CSV seed words start pending; the public lookup returns only word pairs a reviewer approved.
 - Reviewers can add, correct, reject, reopen, and export word pairs.
 - For sentences, reviewers can submit Hindi source text for human translation or contribute an existing translation, with writing system and source note.
-- The other role must approve the same source, target, writing system, and source note before publication.
+- One signed-in reviewer must approve the exact source, target, writing system, and source note before publication.
 - Approved human sentence pairs export separately from the Santali machine-translation training corpus.
 
 ### Audio
@@ -109,10 +109,10 @@ OCR is optional and local; it is not enabled merely by installing the Python wra
 
 ### Visuals
 
-- A reviewer can upload a school-approved still image for an approved Santali lesson, with accessible description and source credit.
-- The server normalizes/resizes the image and stores a JPEG; another role must inspect the image and description before it reaches students.
+- A reviewer can upload a school-approved still image or generate an AI image draft for an approved Santali lesson, with accessible description and source credit.
+- The server normalizes/resizes the image and stores a JPEG; one signed-in reviewer must inspect the image and description before it reaches students. The submitting reviewer may approve it.
 - Translation changes invalidate affected review state and stale media so a checked asset does not silently remain attached to changed wording.
-- This is a human-supplied image workflow. There is no image-generation model or automatic illustration pipeline.
+- AI image generation uses Hugging Face Inference Providers; it requires a configured token and available account credits.
 
 ## 4. Models and algorithms
 
@@ -169,12 +169,12 @@ There is no React Native application or Node/npm dependency tree in the current 
 | Requirement in the project brief | Current implementation / gap |
 |---|---|
 | AI-assisted Hindi-to-tribal-language curriculum | Implemented for Santali drafts only. Ho/Mundari are human translation queues; no Ho/Mundari MT model. |
-| Teacher + community validation | Santali text can use one reviewer by default or two roles with `BS_REQUIRED_REVIEWERS=2`; Ho/Mundari lessons and word pairs retain both-role validation. Recordings and visuals require a separate reviewer. |
+| Teacher + community validation | Santali text can use one reviewer by default or two roles with `BS_REQUIRED_REVIEWERS=2`; Ho/Mundari lessons, word pairs, and visuals use one reviewer approval. Recordings require a different reviewer role. |
 | Whole-document curriculum ingestion | Implemented for PDF, DOCX, PPTX, and UTF-8 TXT with page/slide/section tracking and async processing. English-to-Santali is an experimental English-to-Hindi-to-Santali bridge; Ho/Mundari documents require Hindi input and human translation. OCR requires additional local system installation. |
 | One complete student PDF | Implemented as a continuously reflowed bilingual PDF: each original Hindi or English section is followed by its Santali AI draft as soon as all sections finish translation, then the reviewed version after the configured Santali reviewer count approves every section. Ho/Mundari PDFs require human translation and review. Original page layout, images, and table structure are not retained; extracted table text flows as regular text. PDFs are cached by the service worker after opening online; offline availability depends on browser storage. |
 | Offline-first learning | Implemented for app shell and approved content/media caches; not for server-side translation, review, PDF extraction, or generation. |
 | TTS | Optional Santali model generation plus installed browser voices; no bundled offline TTS model for Ho/Mundari. Model speech quality for Santali must be evaluated by fluent speakers. |
-| Visual learning support | Reviewed, manually uploaded still images; no AI image generation. |
+| Visual learning support | Reviewed still images can be uploaded or generated through Hugging Face Inference Providers; one reviewer approval is required. |
 | Active learning / confidence review | Lower-score-first reviewer queue and review analytics exist; confidence is an uncalibrated signal. No automated active-learning trainer. |
 | Transfer learning and back-translation | Scripts exist for a controlled candidate-training workflow. Data review is required; training/deployment is not automatic. |
 | React Native/PWA frontend | PWA is implemented. No React Native app. |

@@ -17,6 +17,9 @@ from io import BytesIO
 from pathlib import Path
 
 MODEL_ID = os.environ.get("BS_SANTALI_TTS_MODEL", "ai4bharat/indic-parler-tts")
+MIN_TTS_NEW_TOKENS = 512
+MAX_TTS_NEW_TOKENS = 2610
+TTS_TOKENS_PER_CHARACTER = 32
 MODEL_CAPTION = (
     "A fluent Santali speaker reads the Santali lesson slowly and clearly "
     "for primary school students. The voice is steady and the audio is very clear."
@@ -192,11 +195,16 @@ def generate_wav(text: str) -> bytes:
         for chunk in _text_chunks(text):
             print("[Santali TTS] generating audio chunk", file=sys.stderr, flush=True)
             prompt = tokenizer(chunk, return_tensors="pt").to(device)
+            max_new_tokens = min(
+                MAX_TTS_NEW_TOKENS,
+                max(MIN_TTS_NEW_TOKENS, len(chunk) * TTS_TOKENS_PER_CHARACTER),
+            )
             audio = model.generate(
                 input_ids=description.input_ids,
                 attention_mask=description.attention_mask,
                 prompt_input_ids=prompt.input_ids,
                 prompt_attention_mask=prompt.attention_mask,
+                max_new_tokens=max_new_tokens,
             ).detach().cpu().numpy().squeeze()
             audio = np.asarray(audio, dtype=np.float32)
             if audio.ndim != 1 or not audio.size or not np.isfinite(audio).all():
